@@ -1,26 +1,17 @@
 {
+  "id": "/baratie-app/",
   "name": "Baratie Menù",
   "short_name": "Baratie",
   "description": "Baratie Street Fish - gestione ordini",
   "lang": "it",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "/baratie-app/index.html",
+  "scope": "/baratie-app/",
   "display": "standalone",
   "orientation": "landscape",
   "background_color": "#15558f",
   "theme_color": "#15558f",
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    }
+    {"src": "/baratie-app/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "/baratie-app/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"}
   ]
 }
