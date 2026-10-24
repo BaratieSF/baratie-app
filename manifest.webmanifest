@@ -3,7 +3,7 @@
   "short_name": "Baratie",
   "description": "Baratie Street Fish - gestione ordini",
   "lang": "it",
-  "start_url": "./index.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "landscape",
