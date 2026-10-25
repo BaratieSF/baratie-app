@@ -1,64 +1,65 @@
+/* BARATIE V36 - shell offline, scope GitHub Pages */
+const CACHE = 'baratie-v36-shell-20261025';
+const ROOT = new URL('./', self.registration.scope);
+const INDEX = new URL('index.html', ROOT).href;
+const FILES = ['index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
-/* BARATIE V36 - service worker compatibile con Chrome Android 8 */
-const CACHE_NAME = 'baratie-v36-shell-20261024';
-const SHELL = ['./index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
-
-self.addEventListener('install', function(event) {
-  event.waitUntil((async function() {
-    const cache = await caches.open(CACHE_NAME);
-    // L'HTML principale e' obbligatorio: non dichiarare installata una cache vuota.
-    await cache.add(new Request('./index.html', {cache: 'reload'}));
-    // Le risorse accessorie non devono bloccare l'installazione.
-    await Promise.all(SHELL.slice(1).map(async function(path) {
-      try { await cache.add(path); } catch (err) { console.warn('Risorsa non salvata:', path, err); }
+self.addEventListener('install', event => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    // Do not activate an offline worker if the app shell is unavailable.
+    await cache.add(new Request(INDEX, {cache: 'reload'}));
+    await Promise.all(FILES.slice(1).map(async name => {
+      try { await cache.add(new URL(name, ROOT).href); }
+      catch (error) { console.warn('BARATIE optional offline asset:', name, error); }
     }));
     await self.skipWaiting();
   })());
 });
 
-self.addEventListener('activate', function(event) {
-  event.waitUntil((async function() {
-    const names = await caches.keys();
-    await Promise.all(names.filter(function(name) {
-      return (name.indexOf('baratie-') === 0) && name !== CACHE_NAME;
-    }).map(function(name) { return caches.delete(name); }));
+self.addEventListener('activate', event => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter(key => key.startsWith('baratie-') && key !== CACHE)
+      .map(key => caches.delete(key)));
     await self.clients.claim();
   })());
 });
 
-self.addEventListener('fetch', function(event) {
-  const req = event.request;
-  if (req.method !== 'GET') return;
-  const url = new URL(req.url);
-  if (url.origin !== self.location.origin) return;
-  if (!url.pathname.startsWith(new URL(self.registration.scope).pathname)) return;
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
+  if (url.origin !== ROOT.origin || !url.pathname.startsWith(ROOT.pathname)) return;
 
-  if (req.mode === 'navigate') {
-    event.respondWith((async function() {
+  if (request.mode === 'navigate') {
+    event.respondWith((async () => {
       try {
-        const response = await fetch(req);
-        if (response.ok) {
-          const cache = await caches.open(CACHE_NAME);
-          await cache.put('./index.html', response.clone());
+        const response = await fetch(request);
+        if (response.ok && response.type === 'basic') {
+          const cache = await caches.open(CACHE);
+          await cache.put(INDEX, response.clone());
         }
         return response;
-      } catch (err) {
-        const cached = await caches.match('./index.html');
-        if (cached) return cached;
-        return Response.error();
+      } catch (error) {
+        return (await caches.match(INDEX)) || Response.error();
       }
     })());
     return;
   }
 
-  // Le icone e il manifest sono disponibili offline; le altre risorse seguono la rete.
-  if (SHELL.slice(1).some(function(path) { return url.pathname === new URL(path, self.registration.scope).pathname; })) {
-    event.respondWith(fetch(req).then(function(response) {
-      if (response.ok) {
-        const copy = response.clone();
-        event.waitUntil(caches.open(CACHE_NAME).then(function(cache) { return cache.put(req, copy); }));
+  if (FILES.slice(1).some(name => url.href === new URL(name, ROOT).href)) {
+    event.respondWith((async () => {
+      try {
+        const response = await fetch(request);
+        if (response.ok) {
+          const cache = await caches.open(CACHE);
+          await cache.put(request, response.clone());
+        }
+        return response;
+      } catch (error) {
+        return (await caches.match(request)) || Response.error();
       }
-      return response;
-    }).catch(function() { return caches.match(req); }));
+    })());
   }
 });
