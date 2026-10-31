@@ -1,14 +1,15 @@
 {
-  "name": "Baratie Menù",
+  "id": "./",
+  "name": "Baratie - Gestione ordini",
   "short_name": "Baratie",
-  "description": "Baratie Street Fish - gestione ordini",
+  "description": "Gestione ordini, menu, scontrini e report Baratie.",
   "lang": "it",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "landscape",
   "background_color": "#15558f",
   "theme_color": "#15558f",
+  "orientation": "any",
   "icons": [
     {
       "src": "./icon-192.png",
@@ -22,10 +23,5 @@
       "type": "image/png",
       "purpose": "any"
     }
-  ],
-  "id": "./index.html",
-  "display_override": [
-    "standalone"
-  ],
-  "prefer_related_applications": false
+  ]
 }
