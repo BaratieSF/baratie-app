@@ -1,5 +1,5 @@
 /* Baratie PWA - nuova base, cache separata dalla vecchia V36 */
-const CACHE='baratie-clean-pwa-20261031-2';
+const CACHE='baratie-fullscreen-20261031-3';
 const APP=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(APP)));
