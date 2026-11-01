@@ -5,6 +5,7 @@
 <meta name="theme-color" content="#15558f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" type="image/png" href="./icon-192.png">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -467,7 +468,7 @@ async function done(){if(doneBusy||!ready||!open||!cart.length)return;doneBusy=t
  function reportCSVData(){
  if(!currentReport)throw new Error('Nessun report selezionato');
  const rows=[['Giornata ID','ID operazione','Numero chiamata','Data','Articolo','Qty','Nota','Prezzo','Totale']];
- currentReport.orders.forEach(o=>o.items.forEach(it=>rows.push([currentReport.id,o.id,o.callNumber??o.id,new Date(o.date).toLocaleString('it-IT'),it.nome,it.qty,it.nota||'',it.prezzo,it.prezzo*it.qty])));
+ currentReport.orders.forEach((o,index)=>o.items.forEach(it=>rows.push([currentReport.id,o.id,index+1,new Date(o.date).toLocaleString('it-IT'),it.nome,it.qty,it.nota||'',it.prezzo,it.prezzo*it.qty])));
  const csv='\uFEFF'+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\r\n');
  const filename=`baratie_report_${currentReport.workDate||currentReport.closedAt.slice(0,10)}.csv`;
  return {csv,filename};
@@ -684,47 +685,45 @@ async function ripristinaBackupCompleto(input){
  finally{input.value='';}
 }
 
-// V19: lo schermo rimane acceso durante l'uso, fino a 15 minuti dall'ultima interazione.
-// Wake Lock puo essere rifiutato dal browser, dal sistema operativo o in contesti non HTTPS.
-const WAKE_IDLE_MS=15*60*1000;
-let wakeLock=null, wakeIdleTimer=null, wakeLastActivity=Date.now(), wakeRequestPending=false;
+// Wake Lock: mantieni lo schermo acceso finche Baratie e visibile.
+// Il browser o Android possono revocare il permesso (es. risparmio batteria).
+let wakeLock=null, wakeRequestPending=false;
 function updateWakeIndicator(){
  const el=document.getElementById('wakeIndicator');if(!el)return;
- const active=!!wakeLock;
+ const active=!!wakeLock && !wakeLock.released;
  el.classList.toggle('wake-active',active);
- const label=active?'Attivo — schermo mantenuto acceso (15 minuti)':'Risparmio energetico — blocco schermo non attivo';
+ const label=active?'Schermo mantenuto acceso':'Blocco schermo non attivo: tocca il sole per riprovare';
  el.title=label;el.setAttribute('aria-label',label);
 }
 async function releaseWake(){
  const lock=wakeLock;wakeLock=null;updateWakeIndicator();
- if(lock){try{await lock.release();}catch(e){}}
+ if(lock&&!lock.released){try{await lock.release();}catch(e){console.warn('Wake Lock release:',e);}}
 }
 async function requestWake(){
- if(wakeLock||wakeRequestPending||document.visibilityState!=='visible'||Date.now()-wakeLastActivity>=WAKE_IDLE_MS)return;
+ if(wakeLock&&!wakeLock.released)return;
+ if(wakeRequestPending||document.visibilityState!=='visible')return;
  if(!('wakeLock' in navigator)||!navigator.wakeLock?.request){updateWakeIndicator();return;}
  wakeRequestPending=true;
  try{
   const lock=await navigator.wakeLock.request('screen');
-  if(document.visibilityState!=='visible'||Date.now()-wakeLastActivity>=WAKE_IDLE_MS){await lock.release();return;}
+  if(document.visibilityState!=='visible'){await lock.release();return;}
   wakeLock=lock;
-  lock.addEventListener('release',()=>{if(wakeLock===lock){wakeLock=null;updateWakeIndicator();}});
- }catch(e){/* Nessun falso stato attivo se Huawei/browser rifiuta. */}
+  lock.addEventListener('release',()=>{
+   if(wakeLock===lock){wakeLock=null;updateWakeIndicator();}
+  });
+ }catch(e){console.warn('Wake Lock non disponibile:',e);}
  finally{wakeRequestPending=false;updateWakeIndicator();}
 }
-function scheduleWakeIdle(){
- clearTimeout(wakeIdleTimer);
- const remaining=WAKE_IDLE_MS-(Date.now()-wakeLastActivity);
- if(remaining<=0){void releaseWake();return;}
- wakeIdleTimer=setTimeout(()=>{if(Date.now()-wakeLastActivity>=WAKE_IDLE_MS)void releaseWake();else scheduleWakeIdle();},remaining);
-}
-function wakeActivity(){wakeLastActivity=Date.now();scheduleWakeIdle();void requestWake();}
-for(const evt of ['pointerdown','keydown','touchstart'])document.addEventListener(evt,wakeActivity,{passive:true});
+// Su Android la richiesta puo richiedere un'interazione dell'utente.
+for(const evt of ['pointerdown','keydown','touchstart'])document.addEventListener(evt,()=>{void requestWake();},{passive:true});
 document.addEventListener('visibilitychange',()=>{
- if(document.visibilityState==='hidden'){void releaseWake();}
- else{scheduleWakeIdle();void requestWake();}
+ if(document.visibilityState==='hidden')void releaseWake();
+ else void requestWake();
 });
-window.addEventListener('pageshow',()=>{scheduleWakeIdle();void requestWake();});
-updateWakeIndicator();scheduleWakeIdle();void requestWake();
+window.addEventListener('pageshow',()=>{void requestWake();});
+const wakeIcon=document.getElementById('wakeIndicator');
+if(wakeIcon){wakeIcon.style.cursor='pointer';wakeIcon.addEventListener('click',()=>{void requestWake();});}
+updateWakeIndicator();void requestWake();
 
 window.addEventListener('online',()=>{checkScheduledReports();});
  startApp();
