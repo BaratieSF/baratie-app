@@ -478,7 +478,7 @@ function exportCSV(){
 }
 // V21: collegamento email predisposto, non attivo finche il server non e verificato.
 // Non inserire BARATIE_SECRET o il PIN nel codice HTML.
-const BARATIE_EMAIL_WEBAPP_URL = ''; // Inserire URL /exec SOLO dopo distribuzione e verifica
+const BARATIE_EMAIL_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw9PmI-zTEVAKBjAoiwhPlg6Ls_At1OL3PjIx0Z0LKTpwdw9TxnAOQPuUqaoYoPhJ-1MQ/exec'; // Inserire URL /exec SOLO dopo distribuzione e verifica
 async function inviaReportConPinBaratie(){
  if(!currentReport){alert('Seleziona prima una giornata dallo storico.');return;}
  const giorno=currentReport.workDate||currentReport.closedAt.slice(0,10);
