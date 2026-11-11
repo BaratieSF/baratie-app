@@ -296,18 +296,37 @@ body{padding:clamp(5px,.75vw,12px);touch-action:pan-x pan-y}
 <div id="edit" class="ov"><div class="editM"><h2 style="font-family:Outfit">Modifica Menù (nome + prezzo)</h2><h3 style="font-family:Outfit;color:#FF6B1A;margin-top:12px">PIATTI</h3><div id="eP"></div><button style="background:#1A1A1A;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-family:Outfit;font-weight:700;cursor:pointer;margin-top:6px" onclick="addNew('p')">+ Piatto</button><h3 style="font-family:Outfit;color:#1E6BFF;margin-top:12px">BEVANDE</h3><div id="eB"></div><button style="background:#1A1A1A;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-family:Outfit;font-weight:700;cursor:pointer;margin-top:6px" onclick="addNew('b')">+ Bevanda</button><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px"><button style="background:#22C55E;color:#fff;border:none;border-radius:10px;padding:12px;font-family:Outfit;font-weight:800;cursor:pointer" onclick="saveEdit()">Salva</button><button style="background:#E2E8F0;border:none;border-radius:10px;padding:10px;cursor:pointer" onclick="document.getElementById('edit').classList.remove('show')">Annulla</button></div></div></div>
 <script>
 (function(){
-  const panel=document.createElement('div');
-  panel.id='baratie-diagnostic';
-  panel.style.cssText='position:fixed;z-index:2147483647;bottom:0;left:0;right:0;background:#fff5d6;color:#222;border-top:4px solid #b45309;padding:12px;font:15px system-ui;max-height:45vh;overflow:auto;box-shadow:0 -3px 12px #0003';
-  panel.innerHTML='<b>DIAGNOSTICA BARATIE TEST</b><div id="baratie-diagnostic-message">Caricamento codice in corso...</div>';
-  const show=(msg)=>{const e=document.getElementById('baratie-diagnostic-message');if(e)e.textContent=msg;};
-  window.addEventListener('error',e=>show('ERRORE JAVASCRIPT: '+(e.message||'sconosciuto')+' | riga '+(e.lineno||'?')));
-  window.addEventListener('unhandledrejection',e=>show('ERRORE AVVIO: '+String(e.reason&&e.reason.message||e.reason)));
-  document.addEventListener('DOMContentLoaded',()=>{document.body.appendChild(panel);setTimeout(()=>{if(document.getElementById('baratie-diagnostic-message')?.textContent==='Caricamento codice in corso...')show('Il codice non ha terminato l’avvio.');},3500)});
-  window.baratieDiag=show;
+ let latest='In attesa del codice principale...';
+ let hasError=false;
+ function show(message,error=false){
+   if(error)hasError=true;
+   if(hasError&&!error)return;
+   latest=message;
+   const el=document.getElementById('baratie-diagnostic-message');
+   if(el)el.textContent=latest;
+ }
+ window.baratieDiag=show;
+ window.addEventListener('error',function(e){
+   show('ERRORE JAVASCRIPT: '+(e.message||'sconosciuto')+' | riga '+(e.lineno||'?')+' colonna '+(e.colno||'?'),true);
+ },true);
+ window.addEventListener('unhandledrejection',function(e){
+   show('ERRORE AVVIO: '+String(e.reason?.message||e.reason),true);
+ });
+ document.addEventListener('DOMContentLoaded',function(){
+   const panel=document.createElement('div');
+   panel.id='baratie-diagnostic';
+   panel.style.cssText='position:fixed;z-index:2147483647;bottom:0;left:0;right:0;background:#fff5d6;color:#222;border-top:4px solid #b45309;padding:12px;font:15px system-ui;max-height:45vh;overflow:auto;box-shadow:0 -3px 12px #0003';
+   panel.innerHTML='<b>DIAGNOSTICA BARATIE TEST V2</b><div id="baratie-diagnostic-message"></div>';
+   document.body.appendChild(panel);
+   document.getElementById('baratie-diagnostic-message').textContent=latest;
+   setTimeout(function(){
+     if(!hasError && latest==='In attesa del codice principale...')show('Il codice principale non è partito. Verificare errore di caricamento.');
+   },3500);
+ });
 })();
 </script>
 <script>
+window.baratieDiag?.('Codice principale avviato, prima delle impostazioni...');
 const REPORT_EMAIL="report.baratie@gmail.com";
 
 let DEFAULT_PIATTI=[{id:1,nome:"Fritto Misto",prezzo:12},{id:2,nome:"Verdure Fritte",prezzo:8},{id:3,nome:"Acciughe Fritte",prezzo:9},{id:4,nome:"Pesciolini",prezzo:9},{id:5,nome:"Arrosticini 5pz",prezzo:10},{id:6,nome:"Patatine Fritte",prezzo:5},{id:7,nome:"Mozzarella Fritta",prezzo:7},{id:8,nome:"Crocchette",prezzo:6}];
