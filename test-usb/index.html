@@ -426,7 +426,7 @@ async function baratiePrintUSB(order){
  }catch(e){baratieUSBStatus('Errore stampa USB');alert('Stampa USB interrotta: '+e.message+'\nControlla la carta prima di riprovare: uno dei ticket potrebbe essere gia uscito.');}
  finally{baratieUSBPrinting=false;}
 }
-function printPreviewTickets(){if(previewOrder)await baratiePrintUSB(previewOrder);}
+async function printPreviewTickets(){if(previewOrder)await baratiePrintUSB(previewOrder);}
 async function reprintLastOrder(){
  if(!ready){alert('Archivio non ancora pronto');return;}
  if(!open){alert('La ristampa è disponibile solo durante un servizio aperto.');return;}
