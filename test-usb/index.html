@@ -400,7 +400,7 @@ function printDocument(order){
 </body></html>`);
  w.document.close();w.focus();setTimeout(()=>w.print(),400);
 }
-async // Equip 351003 USB: stessa interfaccia/endpoint verificati nei test sul Samsung.
+// Equip 351003 USB: stessa interfaccia/endpoint verificati nei test sul Samsung.
 // Non cambia la logica DONE, archivio o numerazione ordini.
 const BARATIE_USB={vendorId:0x4B43,productId:0x3830,interfaceNumber:0,endpointOut:3};
 let baratieUSBDevice=null,baratieUSBPrinting=false;
