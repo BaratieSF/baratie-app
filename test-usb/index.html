@@ -350,7 +350,7 @@ function receiptPair(order){
  const when=new Date(order.date).toLocaleString('it-IT');
  const food=order.items.filter(i=>i.tipo==='p');
  const drinks=order.items.filter(i=>i.tipo==='b');
- const mark=`<img class="t-logo" src="${BARATIE_LOGO}" alt="Logo Baratie">`;
+ const mark="";
  const foodLines=food.map(i=>`<div class="t-food">${i.qty} × ${safeText(i.nome)}${i.nota?`<div class="t-note">${safeText(i.nota)}</div>`:''}</div>`).join('')||'<div class="t-drink">—</div>';
  const drinkLines=drinks.map(i=>`<div class="t-drink">${i.qty} × ${safeText(i.nome)}${i.nota?`<div class="t-note">${safeText(i.nota)}</div>`:''}</div>`).join('')||'<div class="t-drink">—</div>';
  const kitchen=`<section class="ticket">${mark}<div class="t-brand">BARATIE FOOD TRUCK</div><div class="t-sub">KITCHEN ORDER TICKET</div><div class="t-call">CALL #${safeText(call)}</div><hr><div class="t-section">FOOD / PIATTI</div>${foodLines}<hr><div class="t-section">BEVANDE</div>${drinkLines}<hr><div class="t-foot">${safeText(when)}<br><b>ORDINE PER CUCINA</b></div></section>`;
@@ -417,80 +417,112 @@ async function baratieSendUSB(data){for(let i=0;i<data.length;i+=64){const r=awa
 // V5: grafica senza logo cucina, logo cliente compositato separatamente su canvas.
 // Non richiede librerie esterne, connessione internet o cambiamenti a DONE.
 async function baratieTicketGraphic(order,kitchen){
- const pair=document.createElement('div');
- pair.innerHTML=receiptPair(order);
- const ticket=pair.querySelectorAll('.ticket')[kitchen?0:1];
- if(!ticket)throw Error('Anteprima del ticket non trovata');
- // Nessuna immagine nel SVG foreignObject: evita canvas contaminato (cross-origin).
- // Cucina: logo eliminato. Cliente: spazio riservato e logo disegnato direttamente sul canvas.
- const logoNode=ticket.querySelector('.t-logo');
- if(logoNode){
-   if(kitchen)logoNode.remove();
-   else {const placeholder=document.createElement('div');placeholder.className='t-logo t-logo-placeholder';logoNode.replaceWith(placeholder);}
- }
- // CSS isolato: identico alle regole .ticket dell'anteprima, senza cornici/ombre.
- const css=`*{box-sizing:border-box}body{margin:0} .ticket{width:288px;max-width:none;padding:18px 16px 20px;background:white;color:#111;border:0;font-family:Arial,Helvetica,sans-serif;box-shadow:none}
- .ticket hr{border:0;border-top:1px dashed #555;margin:12px 0}
- .ticket .t-logo{display:block;width:84px;height:96px;object-fit:contain;margin:0 auto 7px}
- .ticket .t-brand{text-align:center;font-size:19px;font-weight:900;letter-spacing:.4px;line-height:1.15}
- .ticket .t-sub{text-align:center;font-size:10px;letter-spacing:1.2px;margin-top:4px;font-weight:700}
- .ticket .t-call{text-align:center;font-size:30px;font-weight:900;letter-spacing:-.5px;margin:16px 0}
- .ticket .t-section{font-size:11px;font-weight:900;letter-spacing:1px;margin:12px 0 7px}
- .ticket .t-food{font-size:17px;line-height:1.2;font-weight:900;margin:11px 0;text-transform:uppercase;overflow-wrap:anywhere}
- .ticket .t-drink{font-size:12px;line-height:1.3;margin:5px 0}
- .ticket .t-note{font-size:12px;font-weight:800;border-left:3px solid #111;padding:3px 0 3px 7px;margin:5px 0 0 12px;text-transform:none}
- .ticket .t-item{display:flex;justify-content:space-between;gap:8px;font-size:12px;margin:9px 0;line-height:1.3}
- .ticket .t-item span{flex:1;overflow-wrap:anywhere}.ticket .t-item b{white-space:nowrap}
- .ticket .t-total{display:flex;justify-content:space-between;font-size:20px;font-weight:900;margin:12px 0}
- .ticket .t-meta{font-size:11px;line-height:1.6}
- .ticket .t-foot{text-align:center;font-size:11px;line-height:1.5}`;
- const stage=document.createElement('div');
- stage.style.cssText='position:fixed;left:-10000px;top:0;width:288px;visibility:hidden;pointer-events:none';
- stage.innerHTML='<style>'+css+'</style>';
- stage.appendChild(ticket);
- document.body.appendChild(stage);
- let h,logoBox=null;
- try{
-  const ticketRect=ticket.getBoundingClientRect();
-  h=Math.ceil(ticketRect.height)+2;
-  const placeholder=ticket.querySelector('.t-logo-placeholder');
-  if(placeholder){const r=placeholder.getBoundingClientRect();logoBox={x:r.left-ticketRect.left,y:r.top-ticketRect.top,w:r.width,h:r.height};}
- }finally{stage.remove();}
- if(h<30||h>10000)throw Error('Dimensione ticket non valida');
- const xml=new XMLSerializer().serializeToString(ticket);
- const svg='<svg xmlns="http://www.w3.org/2000/svg" width="288" height="'+h+'"><foreignObject width="288" height="'+h+'"><div xmlns="http://www.w3.org/1999/xhtml"><style>'+css+'</style>'+xml+'</div></foreignObject></svg>';
- const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
- let img;
- try{img=new Image();await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(Error('Impossibile creare immagine ticket'));img.src=url;});}
- finally{URL.revokeObjectURL(url);}
- const canvas=document.createElement('canvas');canvas.width=576;canvas.height=h*2;
+ // V6: disegno nativo Canvas, senza SVG/foreignObject/immagini.
+ // Evita il blocco cross-origin di Chrome e funziona offline.
+ const W=576,scale=2,pad=32,inner=W-2*pad;
+ const canvas=document.createElement('canvas');
+ canvas.width=W;canvas.height=7000;
  const ctx=canvas.getContext('2d',{willReadFrequently:true});
- ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
- ctx.drawImage(img,0,0,576,h*2);
- // Il logo embedded data:image/png viene decodificato a parte e disegnato direttamente.
- // Questo non contamina il canvas ed evita l'errore getImageData della V4.
- if(!kitchen && logoBox){
-   try{
-     const logo=new Image();
-     await new Promise((resolve,reject)=>{logo.onload=resolve;logo.onerror=()=>reject(Error('Logo non disponibile'));logo.src=BARATIE_LOGO;});
-     const scale=Math.min(logoBox.w/logo.naturalWidth,logoBox.h/logo.naturalHeight);
-     const dw=logo.naturalWidth*scale,dh=logo.naturalHeight*scale;
-     const dx=logoBox.x+(logoBox.w-dw)/2,dy=logoBox.y+(logoBox.h-dh)/2;
-     ctx.drawImage(logo,dx*2,dy*2,dw*2,dh*2);
-   }catch(e){console.warn('Logo cliente non disponibile: stampa senza logo',e);}
+ ctx.fillStyle='#fff';ctx.fillRect(0,0,W,canvas.height);
+ ctx.fillStyle='#111';ctx.textBaseline='top';
+ let y=36;
+ const font=(size,weight=400)=>`${weight} ${size*scale}px Arial,Helvetica,sans-serif`;
+ function line(text,size=12,weight=400,align='left',height=null){
+   ctx.font=font(size,weight);ctx.textAlign=align;
+   const x=align==='center'?W/2:align==='right'?W-pad:pad;
+   ctx.fillText(String(text),x,y);
+   y+=(height??size*1.45)*scale;
  }
- let rgba;
- try{rgba=ctx.getImageData(0,0,576,h*2).data;}catch(e){throw Error('Grafica non leggibile: '+e.message);}
+ function center(t,size=12,weight=400,h=null){line(t,size,weight,'center',h);}
+ function rule(){
+   y+=6;ctx.strokeStyle='#777';ctx.lineWidth=1;
+   ctx.setLineDash([7,5]);ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(W-pad,y);ctx.stroke();
+   ctx.setLineDash([]);y+=21;
+ }
+ function wrap(t,maxW,size,weight){
+   ctx.font=font(size,weight);
+   const words=String(t).split(/\s+/),out=[];let cur='';
+   for(const word of words){
+     const next=cur?cur+' '+word:word;
+     if(ctx.measureText(next).width>maxW && cur){out.push(cur);cur=word;}else cur=next;
+   }
+   if(cur)out.push(cur);
+   return out.length?out:[''];
+ }
+ function wrapped(t,size,weight,maxW=inner,align='left'){
+   for(const part of wrap(t,maxW,size,weight))line(part,size,weight,align,size*1.3);
+ }
+ function item(t,price){
+   const priceSize=12;
+   ctx.font=font(priceSize,700);
+   const priceW=ctx.measureText(price).width+12;
+   const rows=wrap(t,inner-priceW-12,12,400);
+   const oldY=y;
+   for(const row of rows)line(row,12,400,'left',16);
+   ctx.font=font(priceSize,700);ctx.textAlign='right';
+   ctx.fillText(price,W-pad,oldY);
+ }
+ const call=order.callNumber??order.id;
+ const when=new Date(order.date).toLocaleString('it-IT');
+ if(kitchen){
+   center('BARATIE FOOD TRUCK',19,900,23);
+   center('KITCHEN ORDER TICKET',10,700,18);
+   y+=18;center('CALL #'+call,30,900,43);
+   rule();line('FOOD / PIATTI',11,900);y+=4;
+   const food=order.items.filter(i=>i.tipo==='p');
+   if(!food.length)line('—',12);
+   for(const i of food){
+     wrapped(i.qty+' × '+i.nome.toUpperCase(),17,900);
+     if(i.nota)wrapped('↳ '+i.nota,12,700);
+     y+=11;
+   }
+   rule();line('BEVANDE',11,900);y+=4;
+   const drinks=order.items.filter(i=>i.tipo==='b');
+   if(!drinks.length)line('—',12);
+   for(const i of drinks){
+     wrapped(i.qty+' × '+i.nome,12,400);
+     if(i.nota)wrapped('↳ '+i.nota,12,700);
+     y+=5;
+   }
+   rule();center(when,11,400,16);
+   center('ORDINE PER CUCINA',11,700,18);
+ }else{
+   center('BARATIE STREET FISH',19,900,23);
+   center('Fried Fish on Wheels!',10,700,18);
+   y+=12;
+   center('P.IVA 12876250965',11,400,16);
+   center('Cell. 340.6463899',11,400,16);
+   center('20832 Desio (MB)',11,400,16);
+   center('@baratie_street_fish',11,400,16);
+   rule();line('N° ORDINE: '+call,11,700,17);
+   line('DATA E ORA: '+when,11,400,17);
+   rule();
+   for(const i of order.items){
+     item(i.qty+' × '+i.nome,money(i.qty*i.prezzo));
+     if(i.nota)wrapped('↳ '+i.nota,10,700,inner-80);
+     y+=6;
+   }
+   rule();
+   const totalY=y;line('TOTALE',20,900,28);
+   ctx.font=font(20,900);ctx.textAlign='right';
+   ctx.fillText(money(order.tot),W-pad,totalY);
+   rule();y+=4;
+   center('CALL #'+call,30,900,44);
+   center('Grazie!',11,700,18);
+   center('Conserva lo scontrino per il ritiro',11,400,18);
+ }
+ y+=36;
+ const h=Math.ceil(y);
+ if(h<50||h>canvas.height)throw Error('Dimensione ticket non valida');
+ const rgba=ctx.getImageData(0,0,W,h).data;
  const chunks=[Uint8Array.from([0x1b,0x40,0x1b,0x61,0])];
- // GS v 0: raster ESC/POS in fasce di 24 righe per non sovraccaricare il buffer.
- const width=576,bytesPerRow=72;
- for(let top=0;top<canvas.height;top+=24){
-  const rows=Math.min(24,canvas.height-top);
-  const payload=new Uint8Array(bytesPerRow*rows);
-  for(let y=0;y<rows;y++)for(let x=0;x<width;x++){
-   const p=((top+y)*width+x)*4;
+ const bytesPerRow=W/8;
+ for(let top=0;top<h;top+=24){
+  const rows=Math.min(24,h-top),payload=new Uint8Array(bytesPerRow*rows);
+  for(let yy=0;yy<rows;yy++)for(let x=0;x<W;x++){
+   const p=((top+yy)*W+x)*4;
    const gray=(rgba[p]*299+rgba[p+1]*587+rgba[p+2]*114)/1000;
-   if(gray<170)payload[y*bytesPerRow+(x>>3)]|=0x80>>(x&7);
+   if(gray<175)payload[yy*bytesPerRow+(x>>3)]|=0x80>>(x&7);
   }
   chunks.push(Uint8Array.from([0x1d,0x76,0x30,0,bytesPerRow&255,bytesPerRow>>8,rows&255,rows>>8]),payload);
  }
