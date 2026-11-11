@@ -414,13 +414,20 @@ function baratieTicket(order,kitchen){
  chunks.push(feed,cut);return baratieJoin(...chunks);
 }
 async function baratieSendUSB(data){for(let i=0;i<data.length;i+=64){const r=await baratieUSBDevice.transferOut(BARATIE_USB.endpointOut,data.slice(i,i+64));if(r.status!=='ok')throw Error('Trasferimento USB: '+r.status);}}
-// Stampa grafica: rasterizza lo stesso HTML dell'anteprima a 576 punti (80 mm).
+// V5: grafica senza logo cucina, logo cliente compositato separatamente su canvas.
 // Non richiede librerie esterne, connessione internet o cambiamenti a DONE.
 async function baratieTicketGraphic(order,kitchen){
  const pair=document.createElement('div');
  pair.innerHTML=receiptPair(order);
  const ticket=pair.querySelectorAll('.ticket')[kitchen?0:1];
  if(!ticket)throw Error('Anteprima del ticket non trovata');
+ // Nessuna immagine nel SVG foreignObject: evita canvas contaminato (cross-origin).
+ // Cucina: logo eliminato. Cliente: spazio riservato e logo disegnato direttamente sul canvas.
+ const logoNode=ticket.querySelector('.t-logo');
+ if(logoNode){
+   if(kitchen)logoNode.remove();
+   else {const placeholder=document.createElement('div');placeholder.className='t-logo t-logo-placeholder';logoNode.replaceWith(placeholder);}
+ }
  // CSS isolato: identico alle regole .ticket dell'anteprima, senza cornici/ombre.
  const css=`*{box-sizing:border-box}body{margin:0} .ticket{width:288px;max-width:none;padding:18px 16px 20px;background:white;color:#111;border:0;font-family:Arial,Helvetica,sans-serif;box-shadow:none}
  .ticket hr{border:0;border-top:1px dashed #555;margin:12px 0}
@@ -442,8 +449,13 @@ async function baratieTicketGraphic(order,kitchen){
  stage.innerHTML='<style>'+css+'</style>';
  stage.appendChild(ticket);
  document.body.appendChild(stage);
- let h;
- try{h=Math.ceil(ticket.getBoundingClientRect().height)+2;}finally{stage.remove();}
+ let h,logoBox=null;
+ try{
+  const ticketRect=ticket.getBoundingClientRect();
+  h=Math.ceil(ticketRect.height)+2;
+  const placeholder=ticket.querySelector('.t-logo-placeholder');
+  if(placeholder){const r=placeholder.getBoundingClientRect();logoBox={x:r.left-ticketRect.left,y:r.top-ticketRect.top,w:r.width,h:r.height};}
+ }finally{stage.remove();}
  if(h<30||h>10000)throw Error('Dimensione ticket non valida');
  const xml=new XMLSerializer().serializeToString(ticket);
  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="288" height="'+h+'"><foreignObject width="288" height="'+h+'"><div xmlns="http://www.w3.org/1999/xhtml"><style>'+css+'</style>'+xml+'</div></foreignObject></svg>';
@@ -455,6 +467,18 @@ async function baratieTicketGraphic(order,kitchen){
  const ctx=canvas.getContext('2d',{willReadFrequently:true});
  ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
  ctx.drawImage(img,0,0,576,h*2);
+ // Il logo embedded data:image/png viene decodificato a parte e disegnato direttamente.
+ // Questo non contamina il canvas ed evita l'errore getImageData della V4.
+ if(!kitchen && logoBox){
+   try{
+     const logo=new Image();
+     await new Promise((resolve,reject)=>{logo.onload=resolve;logo.onerror=()=>reject(Error('Logo non disponibile'));logo.src=BARATIE_LOGO;});
+     const scale=Math.min(logoBox.w/logo.naturalWidth,logoBox.h/logo.naturalHeight);
+     const dw=logo.naturalWidth*scale,dh=logo.naturalHeight*scale;
+     const dx=logoBox.x+(logoBox.w-dw)/2,dy=logoBox.y+(logoBox.h-dh)/2;
+     ctx.drawImage(logo,dx*2,dy*2,dw*2,dh*2);
+   }catch(e){console.warn('Logo cliente non disponibile: stampa senza logo',e);}
+ }
  let rgba;
  try{rgba=ctx.getImageData(0,0,576,h*2).data;}catch(e){throw Error('Grafica non leggibile: '+e.message);}
  const chunks=[Uint8Array.from([0x1b,0x40,0x1b,0x61,0])];
