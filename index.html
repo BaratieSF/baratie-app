@@ -374,7 +374,7 @@ function receiptPair(order){
  const kitchen=`<section class="ticket">${mark}<div class="t-brand">BARATIE FOOD TRUCK</div><div class="t-sub">KITCHEN ORDER TICKET</div><div class="t-call">CALL #${safeText(call)}</div><hr><div class="t-section">FOOD / PIATTI</div>${foodLines}<hr><div class="t-section">BEVANDE</div>${drinkLines}<hr><div class="t-foot">${safeText(when)}<br><b>ORDINE PER CUCINA</b></div></section>`;
  const items=order.items.map(i=>`<div class="t-item"><span>${i.qty} × ${safeText(i.nome)}${i.nota?`<span style="display:block;font-size:10px;font-weight:400">↳ ${safeText(i.nota)}</span>`:''}</span><span class="t-price">${money(i.qty*i.prezzo)}</span></div>`).join('');
  const customer=`<section class="ticket ticket-customer">${mark}<div class="t-brand">BARATIE STREET FISH</div><div class="t-sub" style="letter-spacing:.2px;text-transform:none">Fried Fish on Wheels!</div><div class="t-foot" style="margin-top:9px">P.IVA 12876250965<br>Cell. 340.6463899<br>@baratie_street_fish</div><hr><div class="t-meta">N° ORDINE: ${safeText(call)}<br>DATA E ORA: ${safeText(when)}</div><hr>${items}<hr><div class="t-total"><span>TOTALE</span><span>${money(order.tot)}</span></div><hr><div class="t-call t-call-customer">CALL #${safeText(call)}</div><div class="t-foot"><b>Grazie!</b><br>Conserva lo scontrino per il ritiro</div></section>`;
- return `<div class="ticket-pair">${kitchen}${customer}</div>`;
+ return `<div class="ticket-pair">${customer}</div>`; // TEST: solo cliente; cucina conservata per ripristino
 }
 function printableOrderHtml(order){return receiptPair(order);}
 let previewOrder=null;
