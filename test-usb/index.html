@@ -221,25 +221,12 @@ body{padding:clamp(5px,.75vw,12px);touch-action:pan-x pan-y}
 .wake-indicator:not(.wake-active){color:#a6c7df}
 .wake-indicator .wake-slash{display:none}
 .wake-indicator:not(.wake-active) .wake-slash{display:block}
-/* Test 80 mm: scontrino cliente spostato a destra e ristretto per evitare il taglio sinistro. */
-.ticket-pair .ticket{width:76mm;max-width:76mm;flex:0 0 76mm;padding:3mm;box-sizing:border-box}
-.ticket-pair .ticket-customer{width:64mm;max-width:64mm;flex:0 0 64mm;margin-left:10mm;margin-right:2mm;padding:2mm 1.5mm;box-sizing:border-box;overflow:visible}
-.ticket-pair .ticket-customer .t-item{break-inside:avoid;page-break-inside:avoid}
-.ticket-pair .ticket-customer .t-item>span{overflow-wrap:anywhere}
-.ticket-pair .ticket-customer .t-total{break-inside:avoid;page-break-inside:avoid}
 /* Scontrino cliente: leggibilita e colonne resistenti ai tagli. */
 .ticket-customer .t-item{display:grid;grid-template-columns:minmax(0,1fr) max-content;column-gap:7px;align-items:start;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.4}
 .ticket-customer .t-item>span{min-width:0;overflow-wrap:break-word;word-break:normal}
 .ticket-customer .t-item>b{white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums;font-size:12px}
 .ticket-customer .t-total{gap:6px;align-items:baseline;flex-wrap:wrap;font-variant-numeric:tabular-nums}
 .ticket-customer .t-meta,.ticket-customer .t-foot{overflow-wrap:break-word}
-/* Solo cinque elementi in grassetto sullo scontrino cliente; regole condivise da anteprima e stampa. */
-.ticket-customer{font-weight:400}
-.ticket-customer .t-brand,.ticket-customer .t-sub,.ticket-customer .t-total,.ticket-customer .t-call-customer,.ticket-customer .t-foot b{font-weight:900}
-.ticket-customer .t-meta,.ticket-customer .t-item,.ticket-customer .t-item .t-price,.ticket-customer .t-item .t-note,.ticket-customer .t-foot{font-weight:400}
-.ticket-customer .t-item .t-price{white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums;font-size:12px}
-.ticket-customer .t-item>span:first-child{min-width:0}
-
 </style>
 <!-- Baratie V25: grafica approvata; solo CSS -->
 <style id="baratie-preview-grafica">
@@ -372,8 +359,8 @@ function receiptPair(order){
  const foodLines=food.map(i=>`<div class="t-food">${i.qty} × ${safeText(i.nome)}${i.nota?`<div class="t-note">${safeText(i.nota)}</div>`:''}</div>`).join('')||'<div class="t-drink">—</div>';
  const drinkLines=drinks.map(i=>`<div class="t-drink">${i.qty} × ${safeText(i.nome)}${i.nota?`<div class="t-note">${safeText(i.nota)}</div>`:''}</div>`).join('')||'<div class="t-drink">—</div>';
  const kitchen=`<section class="ticket">${mark}<div class="t-brand">BARATIE FOOD TRUCK</div><div class="t-sub">KITCHEN ORDER TICKET</div><div class="t-call">CALL #${safeText(call)}</div><hr><div class="t-section">FOOD / PIATTI</div>${foodLines}<hr><div class="t-section">BEVANDE</div>${drinkLines}<hr><div class="t-foot">${safeText(when)}<br><b>ORDINE PER CUCINA</b></div></section>`;
- const items=order.items.map(i=>`<div class="t-item"><span>${i.qty} × ${safeText(i.nome)}${i.nota?`<span style="display:block;font-size:10px;font-weight:400">↳ ${safeText(i.nota)}</span>`:''}</span><span class="t-price">${money(i.qty*i.prezzo)}</span></div>`).join('');
- const customer=`<section class="ticket ticket-customer">${mark}<div class="t-brand">BARATIE STREET FISH</div><div class="t-sub" style="letter-spacing:.2px;text-transform:none">Fried Fish on Wheels!</div><div class="t-foot" style="margin-top:9px">P.IVA 12876250965<br>Cell. 340.6463899<br>@baratie_street_fish</div><hr><div class="t-meta">N° ORDINE: ${safeText(call)}<br>DATA E ORA: ${safeText(when)}</div><hr>${items}<hr><div class="t-total"><span>TOTALE</span><span>${money(order.tot)}</span></div><hr><div class="t-call t-call-customer">CALL #${safeText(call)}</div><div class="t-foot"><b>Grazie!</b><br>Conserva lo scontrino per il ritiro</div></section>`;
+ const items=order.items.map(i=>`<div class="t-item"><span>${i.qty} × ${safeText(i.nome)}${i.nota?`<span style="display:block;font-size:10px;font-weight:700">↳ ${safeText(i.nota)}</span>`:''}</span><b>${money(i.qty*i.prezzo)}</b></div>`).join('');
+ const customer=`<section class="ticket ticket-customer">${mark}<div class="t-brand">BARATIE STREET FISH</div><div class="t-sub" style="letter-spacing:.2px;text-transform:none">Fried Fish on Wheels!</div><div class="t-foot" style="margin-top:9px">P.IVA 12876250965<br>Cell. 340.6463899<br>20832 Desio (MB)<br>@baratie_street_fish</div><hr><div class="t-meta"><b>N° ORDINE: ${safeText(call)}</b><br>DATA E ORA: ${safeText(when)}</div><hr>${items}<hr><div class="t-total"><span>TOTALE</span><span>${money(order.tot)}</span></div><hr><div class="t-call t-call-customer">CALL #${safeText(call)}</div><div class="t-foot"><b>Grazie!</b><br>Conserva lo scontrino per il ritiro</div></section>`;
  return `<div class="ticket-pair">${kitchen}${customer}</div>`;
 }
 function printableOrderHtml(order){return receiptPair(order);}
@@ -383,7 +370,7 @@ function printDocument(order){
  const w=window.open('','_blank','width=800,height=750');
  if(!w){alert('Popup bloccato. Consenti le finestre popup per provare la stampa.');return;}
  const styles=document.querySelector('style').textContent;
- w.document.write(`<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Baratie - ordine #${safeText(order.callNumber??order.id)}</title><style>${styles}html,body{height:auto;max-height:none;overflow:visible}body{display:block;background:#fff;margin:0;padding:8px;min-height:0;height:auto;max-height:none;overflow:visible}.ticket-pair{display:flex}.ticket{box-shadow:none}@page{size:80mm auto;margin:2mm}@media print{body{padding:0}.ticket-pair{display:block;margin:0}.ticket-pair .ticket{width:100%;max-width:100%;flex:none;border:0;padding:3mm;break-after:page;page-break-after:always}.ticket-pair .ticket-customer{width:64mm;max-width:64mm;flex:none;margin-left:10mm;margin-right:2mm;box-sizing:border-box;padding:2mm 1.5mm;overflow:visible}.ticket-customer .t-item{break-inside:avoid;page-break-inside:avoid}.ticket-customer .t-item>span{overflow-wrap:anywhere}.ticket-customer .t-total{break-inside:avoid;page-break-inside:avoid}.ticket .t-call{font-size:30px;white-space:nowrap}.ticket .t-call-customer{font-size:33px}.ticket:last-child{break-after:auto;page-break-after:auto}}</style></head><body>${receiptPair(order)}
+ w.document.write(`<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Baratie - ordine #${safeText(order.callNumber??order.id)}</title><style>${styles}html,body{height:auto;max-height:none;overflow:visible}body{display:block;background:#fff;margin:0;padding:8px;min-height:0;height:auto;max-height:none;overflow:visible}.ticket-pair{display:flex}.ticket{box-shadow:none}@page{size:80mm auto;margin:2mm}@media print{body{padding:0}.ticket-pair{display:block;margin:0}.ticket{width:100%;max-width:100%;border:0;padding:3mm;break-after:page;page-break-after:always}.ticket-customer{width:100%;max-width:100%;padding:2mm 1.5mm;overflow:visible}.ticket-customer .t-item{break-inside:avoid;page-break-inside:avoid}.ticket-customer .t-item>span{overflow-wrap:anywhere}.ticket-customer .t-total{break-inside:avoid;page-break-inside:avoid}.ticket .t-call{font-size:30px;white-space:nowrap}.ticket .t-call-customer{font-size:33px}.ticket:last-child{break-after:auto;page-break-after:auto}}</style></head><body>${receiptPair(order)}
 </body></html>`);
  w.document.close();w.focus();setTimeout(()=>w.print(),400);
 }
