@@ -221,9 +221,9 @@ body{padding:clamp(5px,.75vw,12px);touch-action:pan-x pan-y}
 .wake-indicator:not(.wake-active){color:#a6c7df}
 .wake-indicator .wake-slash{display:none}
 .wake-indicator:not(.wake-active) .wake-slash{display:block}
-/* Anteprima fedele alla geometria del rotolo 80 mm: stessa larghezza, rientro e padding della stampa. */
+/* Test 80 mm: scontrino cliente spostato a destra e ristretto per evitare il taglio sinistro. */
 .ticket-pair .ticket{width:76mm;max-width:76mm;flex:0 0 76mm;padding:3mm;box-sizing:border-box}
-.ticket-pair .ticket-customer{width:calc(76mm - 8mm);max-width:calc(76mm - 8mm);flex:0 0 calc(76mm - 8mm);margin-left:6mm;margin-right:2mm;padding:2mm 1.5mm;box-sizing:border-box;overflow:visible}
+.ticket-pair .ticket-customer{width:64mm;max-width:64mm;flex:0 0 64mm;margin-left:10mm;margin-right:2mm;padding:2mm 1.5mm;box-sizing:border-box;overflow:visible}
 .ticket-pair .ticket-customer .t-item{break-inside:avoid;page-break-inside:avoid}
 .ticket-pair .ticket-customer .t-item>span{overflow-wrap:anywhere}
 .ticket-pair .ticket-customer .t-total{break-inside:avoid;page-break-inside:avoid}
@@ -383,7 +383,7 @@ function printDocument(order){
  const w=window.open('','_blank','width=800,height=750');
  if(!w){alert('Popup bloccato. Consenti le finestre popup per provare la stampa.');return;}
  const styles=document.querySelector('style').textContent;
- w.document.write(`<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Baratie - ordine #${safeText(order.callNumber??order.id)}</title><style>${styles}html,body{height:auto;max-height:none;overflow:visible}body{display:block;background:#fff;margin:0;padding:8px;min-height:0;height:auto;max-height:none;overflow:visible}.ticket-pair{display:flex}.ticket{box-shadow:none}@page{size:80mm auto;margin:2mm}@media print{body{padding:0}.ticket-pair{display:block;margin:0}.ticket-pair .ticket{width:100%;max-width:100%;flex:none;border:0;padding:3mm;break-after:page;page-break-after:always}.ticket-pair .ticket-customer{width:calc(100% - 8mm);max-width:calc(100% - 8mm);flex:none;margin-left:6mm;margin-right:2mm;box-sizing:border-box;padding:2mm 1.5mm;overflow:visible}.ticket-customer .t-item{break-inside:avoid;page-break-inside:avoid}.ticket-customer .t-item>span{overflow-wrap:anywhere}.ticket-customer .t-total{break-inside:avoid;page-break-inside:avoid}.ticket .t-call{font-size:30px;white-space:nowrap}.ticket .t-call-customer{font-size:33px}.ticket:last-child{break-after:auto;page-break-after:auto}}</style></head><body>${receiptPair(order)}
+ w.document.write(`<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Baratie - ordine #${safeText(order.callNumber??order.id)}</title><style>${styles}html,body{height:auto;max-height:none;overflow:visible}body{display:block;background:#fff;margin:0;padding:8px;min-height:0;height:auto;max-height:none;overflow:visible}.ticket-pair{display:flex}.ticket{box-shadow:none}@page{size:80mm auto;margin:2mm}@media print{body{padding:0}.ticket-pair{display:block;margin:0}.ticket-pair .ticket{width:100%;max-width:100%;flex:none;border:0;padding:3mm;break-after:page;page-break-after:always}.ticket-pair .ticket-customer{width:64mm;max-width:64mm;flex:none;margin-left:10mm;margin-right:2mm;box-sizing:border-box;padding:2mm 1.5mm;overflow:visible}.ticket-customer .t-item{break-inside:avoid;page-break-inside:avoid}.ticket-customer .t-item>span{overflow-wrap:anywhere}.ticket-customer .t-total{break-inside:avoid;page-break-inside:avoid}.ticket .t-call{font-size:30px;white-space:nowrap}.ticket .t-call-customer{font-size:33px}.ticket:last-child{break-after:auto;page-break-after:auto}}</style></head><body>${receiptPair(order)}
 </body></html>`);
  w.document.close();w.focus();setTimeout(()=>w.print(),400);
 }
