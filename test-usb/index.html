@@ -47,7 +47,7 @@ body{background:#E9EEF5;font-family:'Inter',sans-serif;padding:8px;display:flex;
 .btn-minus{background:#fff}.btn-plus{background:#FF6B1A;color:#fff}.btn-del{background:#EF4444;color:#fff}.btn-ok{background:#22C55E;color:#fff;width:32px!important}
 .total{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-top:2px solid #1A1A1A;font-family:'Outfit';font-weight:800;margin-top:8px}
 .total span:last-child{font-size:28px}
-.usb-tools{display:flex;align-items:center;gap:8px;padding:5px 14px 0;flex-wrap:wrap}.usb-tools button{background:#15558f;color:white;border:0;border-radius:8px;padding:9px;font-weight:800;cursor:pointer}.usb-tools span{font-size:11px;color:#526071}.acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 14px}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 14px}
 .b-print,.b-done{border:none;border-radius:10px;padding:12px;font-family:'Outfit';font-weight:800;cursor:pointer;color:#fff;font-size:13px}
 .b-print{background:#1E6BFF}.b-done{background:#22C55E}
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;place-items:center;z-index:99;padding:10px}.ov.show{display:grid}
@@ -221,6 +221,25 @@ body{padding:clamp(5px,.75vw,12px);touch-action:pan-x pan-y}
 .wake-indicator:not(.wake-active){color:#a6c7df}
 .wake-indicator .wake-slash{display:none}
 .wake-indicator:not(.wake-active) .wake-slash{display:block}
+/* Test 80 mm: scontrino cliente spostato a destra e ristretto per evitare il taglio sinistro. */
+.ticket-pair .ticket{width:76mm;max-width:76mm;flex:0 0 76mm;padding:3mm;box-sizing:border-box}
+.ticket-pair .ticket-customer{width:64mm;max-width:64mm;flex:0 0 64mm;margin-left:10mm;margin-right:2mm;padding:2mm 1.5mm;box-sizing:border-box;overflow:visible}
+.ticket-pair .ticket-customer .t-item{break-inside:avoid;page-break-inside:avoid}
+.ticket-pair .ticket-customer .t-item>span{overflow-wrap:anywhere}
+.ticket-pair .ticket-customer .t-total{break-inside:avoid;page-break-inside:avoid}
+/* Scontrino cliente: leggibilita e colonne resistenti ai tagli. */
+.ticket-customer .t-item{display:grid;grid-template-columns:minmax(0,1fr) max-content;column-gap:7px;align-items:start;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.4}
+.ticket-customer .t-item>span{min-width:0;overflow-wrap:break-word;word-break:normal}
+.ticket-customer .t-item>b{white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums;font-size:12px}
+.ticket-customer .t-total{gap:6px;align-items:baseline;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.ticket-customer .t-meta,.ticket-customer .t-foot{overflow-wrap:break-word}
+/* Solo cinque elementi in grassetto sullo scontrino cliente; regole condivise da anteprima e stampa. */
+.ticket-customer{font-weight:400}
+.ticket-customer .t-brand,.ticket-customer .t-sub,.ticket-customer .t-total,.ticket-customer .t-call-customer,.ticket-customer .t-foot b{font-weight:900}
+.ticket-customer .t-meta,.ticket-customer .t-item,.ticket-customer .t-item .t-price,.ticket-customer .t-item .t-note,.ticket-customer .t-foot{font-weight:400}
+.ticket-customer .t-item .t-price{white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums;font-size:12px}
+.ticket-customer .t-item>span:first-child{min-width:0}
+
 </style>
 <!-- Baratie V25: grafica approvata; solo CSS -->
 <style id="baratie-preview-grafica">
@@ -281,7 +300,7 @@ body{padding:clamp(5px,.75vw,12px);touch-action:pan-x pan-y}
 <div class="receipt-head"><b>Ordine #<span id="rn">1</span></b><span class="order-meta" id="rdt">—</span></div>
 <div id="list" class="rlist"></div>
 <div class="total"><span>TOTALE</span><span id="tot">€ 0,00</span></div>
-<div class="usb-tools"><button type="button" id="usbConnectBtn" onclick="baratieConnectUSB()">🔌 COLLEGA STAMPANTE USB</button><span id="usbStatus">Stampante non collegata</span></div><div class="acts"><button class="b-print" onclick="previewCurrentOrder()">PRINT</button><button class="b-done" onclick="done()">DONE</button></div>
+<div class="acts"><button class="b-print" onclick="previewCurrentOrder()">PRINT</button><button class="b-done" onclick="done()">DONE</button></div>
 </div>
 </div>
 <div id="sideOv" class="sideOv" onclick="if(event.target==this)this.classList.remove('show')"><div class="side"><h3 style="font-family:Outfit">Menu</h3><div id="reprintMenuItem" class="sItem" onclick="this.parentElement.parentElement.classList.remove('show');reprintLastOrder()">🖨️ Ristampa ultimo ordine <span id="lastOrderLabel" style="font-size:11px;color:#64748b;display:block;margin-top:3px">Nessun ordine confermato</span></div><div class="sItem" onclick="this.parentElement.parentElement.classList.remove('show');showReports()">📂 Archivio giornate</div><div class="sItem" onclick="this.parentElement.parentElement.classList.remove('show');document.getElementById('edit').classList.add('show');renderEdit()">✏️ Modifica prezzi</div><button style="width:100%;margin-top:12px;background:#EEE;border:none;border-radius:8px;padding:10px;cursor:pointer" onclick="this.parentElement.parentElement.classList.remove('show')">Chiudi</button></div></div>
@@ -291,8 +310,8 @@ body{padding:clamp(5px,.75vw,12px);touch-action:pan-x pan-y}
 <input type="file" id="baratieBackupFile" accept=".json,application/json" style="display:none" onchange="ripristinaBackupCompleto(this)">
 </div><p style="font-size:11px;color:#586474;margin-bottom:10px">Il backup contiene ordini, storico e menu. Conserva il file JSON al sicuro.</p><button class="history-close" onclick="document.getElementById('historyOv').classList.remove('show')">Chiudi</button></div></div>
 <div id="rep" class="ov"><div class="rep"><h2 style="font-family:Outfit;text-align:center">Report Fine Giornata</h2><p id="rd" style="text-align:center;font-size:11px;color:#888"></p><div class="stat"><div>Ordini<b id="ro">0</b></div><div>Ricavi<b id="rr">€ 0</b></div></div><div id="rp" style="background:#fff;border-radius:10px;padding:8px;border:2px solid #EEE6D3;max-height:200px;overflow:auto"></div><div class="report-actions"><button style="flex:1 1 180px;background:#22C55E;color:#fff;border:none;border-radius:10px;padding:12px 8px;font-family:Outfit;font-weight:800;cursor:pointer" onclick="exportCSV()">Scarica Excel (CSV)</button><button style="flex:1 1 180px;background:#15558f;color:#fff;border:none;border-radius:10px;padding:12px 8px;font-family:Outfit;font-weight:800;cursor:pointer" id="baratieSendEmailButton" onclick="inviaReportConPinBaratie()">INVIA EMAIL</button></div><button class="report-close" onclick="document.getElementById('rep').classList.remove('show')">Chiudi</button><p id="saveMsg" style="font-size:11px;color:#22C55E;text-align:center;margin-top:6px"></p></div></div>
-<div id="reprintOv" class="ov"><div class="rep" style="background:white;max-height:90vh;overflow:auto"><h2 style="font-family:Outfit">Ristampa ultimo ordine</h2><p style="font-size:12px;color:#64748b;margin:6px 0">La ristampa non crea ordini e non modifica il fatturato. Anteprima dei due scontrini. La ristampa non registra una nuova vendita.</p><div id="reprintPreview" style="margin:12px 0;padding:12px;border:1px dashed #aaa;background:#fff;font-size:13px"></div><div style="display:flex;gap:8px"><button style="flex:1;padding:12px;border:0;border-radius:8px;background:#1E6BFF;color:white;font-weight:800" onclick="printLastOrder()">🖨️ Stampa USB</button><button style="flex:1;padding:12px;border:0;border-radius:8px;background:#eee;font-weight:800" onclick="document.getElementById('reprintOv').classList.remove('show')">Annulla</button></div></div></div>
-<div id="ticketOv" class="ov"><div class="rep" style="background:#fff;max-width:760px;max-height:94vh;overflow:auto"><h2 style="font-family:Outfit">Anteprima scontrini</h2><p style="font-size:12px;color:#64748b;margin:8px 0">PRINT non conferma la vendita. Per registrare l’ordine premi DONE.</p><div id="ticketPreview"></div><div style="display:flex;gap:8px;margin-top:12px"><button style="flex:1;padding:12px;background:#1E6BFF;color:white;border:0;border-radius:8px" onclick="printPreviewTickets()">🖨️ STAMPA USB</button><button style="flex:1;padding:12px;border:0;border-radius:8px" onclick="document.getElementById('ticketOv').classList.remove('show')">Chiudi</button></div></div></div>
+<div id="reprintOv" class="ov"><div class="rep" style="background:white;max-height:90vh;overflow:auto"><h2 style="font-family:Outfit">Ristampa ultimo ordine</h2><p style="font-size:12px;color:#64748b;margin:6px 0">La ristampa non crea ordini e non modifica il fatturato. Anteprima dei due scontrini. La ristampa non registra una nuova vendita.</p><div id="reprintPreview" style="margin:12px 0;padding:12px;border:1px dashed #aaa;background:#fff;font-size:13px"></div><div style="display:flex;gap:8px"><button style="flex:1;padding:12px;border:0;border-radius:8px;background:#1E6BFF;color:white;font-weight:800" onclick="printLastOrder()">🖨️ Stampa</button><button style="flex:1;padding:12px;border:0;border-radius:8px;background:#eee;font-weight:800" onclick="document.getElementById('reprintOv').classList.remove('show')">Annulla</button></div></div></div>
+<div id="ticketOv" class="ov"><div class="rep" style="background:#fff;max-width:760px;max-height:94vh;overflow:auto"><h2 style="font-family:Outfit">Anteprima scontrini</h2><p style="font-size:12px;color:#64748b;margin:8px 0">PRINT non conferma la vendita. Per registrare l’ordine premi DONE.</p><div id="ticketPreview"></div><div style="display:flex;gap:8px;margin-top:12px"><button style="flex:1;padding:12px;background:#1E6BFF;color:white;border:0;border-radius:8px" onclick="printPreviewTickets()">Stampa / prova</button><button style="flex:1;padding:12px;border:0;border-radius:8px" onclick="document.getElementById('ticketOv').classList.remove('show')">Chiudi</button></div></div></div>
 <div id="edit" class="ov"><div class="editM"><h2 style="font-family:Outfit">Modifica Menù (nome + prezzo)</h2><h3 style="font-family:Outfit;color:#FF6B1A;margin-top:12px">PIATTI</h3><div id="eP"></div><button style="background:#1A1A1A;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-family:Outfit;font-weight:700;cursor:pointer;margin-top:6px" onclick="addNew('p')">+ Piatto</button><h3 style="font-family:Outfit;color:#1E6BFF;margin-top:12px">BEVANDE</h3><div id="eB"></div><button style="background:#1A1A1A;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-family:Outfit;font-weight:700;cursor:pointer;margin-top:6px" onclick="addNew('b')">+ Bevanda</button><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px"><button style="background:#22C55E;color:#fff;border:none;border-radius:10px;padding:12px;font-family:Outfit;font-weight:800;cursor:pointer" onclick="saveEdit()">Salva</button><button style="background:#E2E8F0;border:none;border-radius:10px;padding:10px;cursor:pointer" onclick="document.getElementById('edit').classList.remove('show')">Annulla</button></div></div></div>
 <script>
 const REPORT_EMAIL="report.baratie@gmail.com";
@@ -353,8 +372,8 @@ function receiptPair(order){
  const foodLines=food.map(i=>`<div class="t-food">${i.qty} × ${safeText(i.nome)}${i.nota?`<div class="t-note">${safeText(i.nota)}</div>`:''}</div>`).join('')||'<div class="t-drink">—</div>';
  const drinkLines=drinks.map(i=>`<div class="t-drink">${i.qty} × ${safeText(i.nome)}${i.nota?`<div class="t-note">${safeText(i.nota)}</div>`:''}</div>`).join('')||'<div class="t-drink">—</div>';
  const kitchen=`<section class="ticket">${mark}<div class="t-brand">BARATIE FOOD TRUCK</div><div class="t-sub">KITCHEN ORDER TICKET</div><div class="t-call">CALL #${safeText(call)}</div><hr><div class="t-section">FOOD / PIATTI</div>${foodLines}<hr><div class="t-section">BEVANDE</div>${drinkLines}<hr><div class="t-foot">${safeText(when)}<br><b>ORDINE PER CUCINA</b></div></section>`;
- const items=order.items.map(i=>`<div class="t-item"><span>${i.qty} × ${safeText(i.nome)}${i.nota?`<span style="display:block;font-size:10px;font-weight:700">↳ ${safeText(i.nota)}</span>`:''}</span><b>${money(i.qty*i.prezzo)}</b></div>`).join('');
- const customer=`<section class="ticket">${mark}<div class="t-brand">BARATIE STREET FISH</div><div class="t-sub" style="letter-spacing:.2px;text-transform:none">Fried Fish on Wheels!</div><div class="t-foot" style="margin-top:9px">P.IVA 12876250965<br>Cell. 340.6463899<br>20832 Desio (MB)<br>@baratie_street_fish</div><hr><div class="t-meta"><b>N° ORDINE: ${safeText(call)}</b><br>DATA E ORA: ${safeText(when)}</div><hr>${items}<hr><div class="t-total"><span>TOTALE</span><span>${money(order.tot)}</span></div><hr><div class="t-call t-call-customer">CALL #${safeText(call)}</div><div class="t-foot"><b>Grazie!</b><br>Conserva lo scontrino per il ritiro</div></section>`;
+ const items=order.items.map(i=>`<div class="t-item"><span>${i.qty} × ${safeText(i.nome)}${i.nota?`<span style="display:block;font-size:10px;font-weight:400">↳ ${safeText(i.nota)}</span>`:''}</span><span class="t-price">${money(i.qty*i.prezzo)}</span></div>`).join('');
+ const customer=`<section class="ticket ticket-customer">${mark}<div class="t-brand">BARATIE STREET FISH</div><div class="t-sub" style="letter-spacing:.2px;text-transform:none">Fried Fish on Wheels!</div><div class="t-foot" style="margin-top:9px">P.IVA 12876250965<br>Cell. 340.6463899<br>@baratie_street_fish</div><hr><div class="t-meta">N° ORDINE: ${safeText(call)}<br>DATA E ORA: ${safeText(when)}</div><hr>${items}<hr><div class="t-total"><span>TOTALE</span><span>${money(order.tot)}</span></div><hr><div class="t-call t-call-customer">CALL #${safeText(call)}</div><div class="t-foot"><b>Grazie!</b><br>Conserva lo scontrino per il ritiro</div></section>`;
  return `<div class="ticket-pair">${kitchen}${customer}</div>`;
 }
 function printableOrderHtml(order){return receiptPair(order);}
@@ -364,69 +383,11 @@ function printDocument(order){
  const w=window.open('','_blank','width=800,height=750');
  if(!w){alert('Popup bloccato. Consenti le finestre popup per provare la stampa.');return;}
  const styles=document.querySelector('style').textContent;
- w.document.write(`<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Baratie - ordine #${safeText(order.callNumber??order.id)}</title><style>${styles}html,body{height:auto;max-height:none;overflow:visible}body{display:block;background:#fff;margin:0;padding:8px;min-height:0;height:auto;max-height:none;overflow:visible}.ticket-pair{display:flex}.ticket{box-shadow:none}@page{size:80mm auto;margin:2mm}@media print{body{padding:0}.ticket-pair{display:block;margin:0}.ticket{width:76mm;max-width:76mm;border:0;padding:3mm;break-after:page;page-break-after:always}.ticket .t-call{font-size:30px;white-space:nowrap}.ticket .t-call-customer{font-size:33px}.ticket:last-child{break-after:auto;page-break-after:auto}}</style></head><body>${receiptPair(order)}
+ w.document.write(`<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Baratie - ordine #${safeText(order.callNumber??order.id)}</title><style>${styles}html,body{height:auto;max-height:none;overflow:visible}body{display:block;background:#fff;margin:0;padding:8px;min-height:0;height:auto;max-height:none;overflow:visible}.ticket-pair{display:flex}.ticket{box-shadow:none}@page{size:80mm auto;margin:2mm}@media print{body{padding:0}.ticket-pair{display:block;margin:0}.ticket-pair .ticket{width:100%;max-width:100%;flex:none;border:0;padding:3mm;break-after:page;page-break-after:always}.ticket-pair .ticket-customer{width:64mm;max-width:64mm;flex:none;margin-left:10mm;margin-right:2mm;box-sizing:border-box;padding:2mm 1.5mm;overflow:visible}.ticket-customer .t-item{break-inside:avoid;page-break-inside:avoid}.ticket-customer .t-item>span{overflow-wrap:anywhere}.ticket-customer .t-total{break-inside:avoid;page-break-inside:avoid}.ticket .t-call{font-size:30px;white-space:nowrap}.ticket .t-call-customer{font-size:33px}.ticket:last-child{break-after:auto;page-break-after:auto}}</style></head><body>${receiptPair(order)}
 </body></html>`);
  w.document.close();w.focus();setTimeout(()=>w.print(),400);
 }
-async // Equip 351003 USB: stessa interfaccia/endpoint verificati nei test sul Samsung.
-// Non cambia la logica DONE, archivio o numerazione ordini.
-const BARATIE_USB={vendorId:0x4B43,productId:0x3830,interfaceNumber:0,endpointOut:3};
-let baratieUSBDevice=null,baratieUSBPrinting=false;
-function baratieUSBStatus(message){const el=document.getElementById('usbStatus');if(el)el.textContent=message;}
-async function baratieConnectUSB(){
- if(!navigator.usb){alert('WebUSB non disponibile in questo contesto. Apri Baratie con Chrome nella stessa modalita sicura usata per il test.');return;}
- try{
-  if(baratieUSBDevice?.opened){baratieUSBStatus('Equip USB collegata');return;}
-  const d=await navigator.usb.requestDevice({filters:[{vendorId:BARATIE_USB.vendorId,productId:BARATIE_USB.productId}]});
-  await d.open();if(!d.configuration)await d.selectConfiguration(1);
-  await d.claimInterface(BARATIE_USB.interfaceNumber);
-  baratieUSBDevice=d;baratieUSBStatus('Equip USB collegata');
- }catch(e){baratieUSBDevice=null;baratieUSBStatus('Connessione USB non riuscita');alert('Connessione stampante non riuscita: '+e.message+'\nChiudi eventuali altre schede di test USB e riprova.');}
-}
-if(navigator.usb)navigator.usb.addEventListener('disconnect',e=>{if(e.device===baratieUSBDevice){baratieUSBDevice=null;baratieUSBStatus('Stampante USB scollegata');}});
-function baratieAscii(s){return Uint8Array.from([...String(s)].map(c=>c.charCodeAt(0)&255));}
-function baratieJoin(...parts){const out=new Uint8Array(parts.reduce((n,p)=>n+p.length,0));let i=0;for(const p of parts){out.set(p,i);i+=p.length;}return out;}
-function baratiePlain(s){return String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/€/g,'EUR').replace(/[’‘]/g,"'").replace(/[–—]/g,'-').replace(/[^\x20-\x7E]/g,'?');}
-function baratieWrap(text,width=42){const words=baratiePlain(text).split(/\s+/).filter(Boolean);const lines=[];let line='';for(const w of words){if(line&&line.length+1+w.length>width){lines.push(line);line='';}if(w.length>width){if(line){lines.push(line);line='';}for(let i=0;i<w.length;i+=width)lines.push(w.slice(i,i+width));}else line+=(line?' ':'')+w;}if(line)lines.push(line);return lines.length?lines:[''];}
-function baratieMoney(n){return 'EUR '+Number(n||0).toFixed(2);}
-function baratieRow(label,amount){const r=baratiePlain(amount);const l=baratiePlain(label);const width=42;const left=width-r.length-1;const lines=baratieWrap(l,Math.max(12,left));const last=lines.pop();return [...lines,last.padEnd(Math.max(last.length,width-r.length),' ')+r].join('\n')+'\n';}
-function baratieTicket(order,kitchen){
- const call=baratiePlain(order.callNumber??order.id);
- const when=baratiePlain(new Date(order.date).toLocaleString('it-IT'));
- const esc=(...a)=>Uint8Array.from(a);
- const init=esc(0x1b,0x40),center=esc(0x1b,0x61,1),left=esc(0x1b,0x61,0),bold=esc(0x1b,0x45,1),normal=esc(0x1b,0x45,0),big=esc(0x1d,0x21,0x11),small=esc(0x1d,0x21,0),feed=esc(0x1b,0x64,5),cut=esc(0x1d,0x56,kitchen?1:0);
- const chunks=[init,center,bold,baratieAscii(kitchen?'BARATIE FOOD TRUCK\n':'BARATIE STREET FISH\n'),normal];
- if(kitchen){chunks.push(baratieAscii('KITCHEN ORDER TICKET\n'),big,baratieAscii('CALL #'+call+'\n'),small,left,baratieAscii('------------------------------------------\n'));
-  for(const [tipo,title] of [['p','FOOD / PIATTI'],['b','BEVANDE']]){
-   chunks.push(bold,baratieAscii(title+'\n'),normal);
-   const items=order.items.filter(i=>i.tipo===tipo);
-   if(!items.length)chunks.push(baratieAscii('-\n'));
-   for(const item of items){chunks.push(baratieAscii(baratieWrap(item.qty+' x '+item.nome).join('\n')+'\n'));if(item.nota)chunks.push(baratieAscii('  NOTA: '+baratieWrap(item.nota,35).join('\n        ')+'\n'));}
-   chunks.push(baratieAscii('------------------------------------------\n'));
-  }
-  chunks.push(center,baratieAscii(when+'\nORDINE PER CUCINA\n'));
- }else{
-  chunks.push(baratieAscii('Fried Fish on Wheels!\nP.IVA 12876250965\nCell. 340.6463899\n20832 Desio (MB)\n@baratie_street_fish\n'),left,baratieAscii('------------------------------------------\n'),bold,baratieAscii('N. ORDINE: '+call+'\n'),normal,baratieAscii('DATA E ORA: '+when+'\n------------------------------------------\n'));
-  for(const item of order.items){chunks.push(baratieAscii(baratieRow(item.qty+' x '+item.nome,baratieMoney(item.qty*item.prezzo))));if(item.nota)chunks.push(baratieAscii('  NOTA: '+baratieWrap(item.nota,35).join('\n        ')+'\n'));}
-  chunks.push(baratieAscii('------------------------------------------\n'),bold,baratieAscii(baratieRow('TOTALE',baratieMoney(order.tot))),normal,center,big,baratieAscii('CALL #'+call+'\n'),small,baratieAscii('Grazie!\nConserva lo scontrino per il ritiro\n'));
- }
- chunks.push(feed,cut);return baratieJoin(...chunks);
-}
-async function baratieSendUSB(data){for(let i=0;i<data.length;i+=64){const r=await baratieUSBDevice.transferOut(BARATIE_USB.endpointOut,data.slice(i,i+64));if(r.status!=='ok')throw Error('Trasferimento USB: '+r.status);}}
-async function baratiePrintUSB(order){
- if(baratieUSBPrinting)return;
- if(!baratieUSBDevice?.opened){alert('Prima premi COLLEGA STAMPANTE USB nella schermata principale. PRINT non chiude l ordine.');return;}
- if(!order?.items?.length){alert('Nessun prodotto da stampare.');return;}
- baratieUSBPrinting=true;baratieUSBStatus('Stampa in corso...');
- try{
-  await baratieSendUSB(baratieTicket(order,true));
-  await new Promise(resolve=>setTimeout(resolve,900));
-  await baratieSendUSB(baratieTicket(order,false));
-  baratieUSBStatus('Due ticket inviati - verifica la carta');
- }catch(e){baratieUSBStatus('Errore stampa USB');alert('Stampa USB interrotta: '+e.message+'\nControlla la carta prima di riprovare: uno dei ticket potrebbe essere gia uscito.');}
- finally{baratieUSBPrinting=false;}
-}
-function printPreviewTickets(){if(previewOrder)await baratiePrintUSB(previewOrder);}
+function printPreviewTickets(){if(previewOrder)printDocument(previewOrder);}
 async function reprintLastOrder(){
  if(!ready){alert('Archivio non ancora pronto');return;}
  if(!open){alert('La ristampa è disponibile solo durante un servizio aperto.');return;}
@@ -435,7 +396,7 @@ async function reprintLastOrder(){
  document.getElementById('reprintOv').classList.add('show');}
  catch(e){alert('Impossibile recuperare ultimo ordine: '+e.message);}
 }
-async function printLastOrder(){if(lastPrintableOrder)await baratiePrintUSB(lastPrintableOrder);}
+function printLastOrder(){if(lastPrintableOrder)printDocument(lastPrintableOrder);}
 function saveM(){localStorage.setItem('baratie_p',JSON.stringify(PIATTI));localStorage.setItem('baratie_b',JSON.stringify(BEVANDE));}
 function renderMenu(){
  document.getElementById('gp').innerHTML=PIATTI.map(p=>`<button class="mbtn piatti" onclick="add(${p.id},'p')"><span>${safeText(p.nome)}</span><span class="price">€ ${p.prezzo.toFixed(2).replace('.',',')}</span></button>`).join('');
